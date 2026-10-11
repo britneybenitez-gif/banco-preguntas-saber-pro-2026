@@ -1,16 +1,17 @@
-# Compiled class file
+
+# Archivos compilados de Java
 *.class
 
-# Log file
+# Archivos de registro
 *.log
 
-# BlueJ files
+# Archivos de BlueJ
 *.ctxt
 
-# Mobile Tools for Java (J2ME)
+# Archivos de Java ME
 .mtj.tmp/
 
-# Package Files #
+# Archivos empaquetados
 *.jar
 *.war
 *.nar
@@ -19,6 +20,25 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Archivos de errores de Java
 hs_err_pid*
 replay_pid*
+
+# Archivos generados por Maven
+/target/
+
+# Configuracion local de editores e IDE
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de entorno local
+.env
+.env.*
