@@ -1,23 +1,30 @@
 
 package co.edu.unicauca.saberpro.infrastructure.persistence;
 
+import co.edu.unicauca.saberpro.domain.model.EstadoPregunta;
 import co.edu.unicauca.saberpro.domain.model.Pregunta;
+import co.edu.unicauca.saberpro.domain.repository.IEstadoPreguntaRepository;
 import co.edu.unicauca.saberpro.domain.repository.IPreguntaRepository;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Implementa la persistencia de preguntas mediante SQLite.
  */
-public class SqlitePreguntaRepository implements IPreguntaRepository {
+public class SqlitePreguntaRepository
+        implements IPreguntaRepository, IEstadoPreguntaRepository {
 
     private final String url;
 
@@ -27,6 +34,7 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
      * @param ruta ruta del archivo SQLite
      */
     public SqlitePreguntaRepository(Path ruta) {
+
         Objects.requireNonNull(ruta, "La ruta es obligatoria");
 
         Path archivo = ruta.toAbsolutePath();
@@ -37,7 +45,8 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
             }
         } catch (IOException e) {
             throw new IllegalStateException(
-                    "No se pudo crear el directorio de datos", e);
+                    "No se pudo crear el directorio de datos", e
+            );
         }
 
         this.url = "jdbc:sqlite:" + archivo;
@@ -45,7 +54,7 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
     }
 
     /**
-     * Crea las tablas necesarias para registrar preguntas.
+     * Crea las tablas de preguntas y distractores.
      */
     private void crearTablas() {
 
@@ -85,7 +94,8 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
 
         } catch (SQLException e) {
             throw new IllegalStateException(
-                    "Error al crear las tablas", e);
+                    "Error al crear las tablas", e
+            );
         }
     }
 
@@ -93,6 +103,7 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
      * Abre una conexión con SQLite.
      */
     private Connection conectar() throws SQLException {
+
         Connection conexion = DriverManager.getConnection(url);
 
         try (Statement sentencia = conexion.createStatement()) {
@@ -111,7 +122,10 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
     @Override
     public void guardar(Pregunta pregunta) {
 
-        Objects.requireNonNull(pregunta, "La pregunta es obligatoria");
+        Objects.requireNonNull(
+                pregunta,
+                "La pregunta es obligatoria"
+        );
 
         String sqlPregunta = """
                 INSERT INTO preguntas (
@@ -133,6 +147,7 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
             conexion.setAutoCommit(false);
 
             try {
+
                 try (PreparedStatement ps =
                              conexion.prepareStatement(sqlPregunta)) {
 
@@ -155,10 +170,17 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
                 try (PreparedStatement ps =
                              conexion.prepareStatement(sqlDistractor)) {
 
-                    for (int i = 0; i < pregunta.getDistractores().size(); i++) {
+                    for (int i = 0;
+                         i < pregunta.getDistractores().size();
+                         i++) {
+
                         ps.setString(1, pregunta.getId());
                         ps.setInt(2, i);
-                        ps.setString(3, pregunta.getDistractores().get(i));
+                        ps.setString(
+                                3,
+                                pregunta.getDistractores().get(i)
+                        );
+
                         ps.executeUpdate();
                     }
                 }
@@ -172,7 +194,141 @@ public class SqlitePreguntaRepository implements IPreguntaRepository {
 
         } catch (SQLException e) {
             throw new IllegalStateException(
-                    "Error al guardar la pregunta", e);
+                    "Error al guardar la pregunta", e
+            );
+        }
+    }
+
+    /**
+     * Busca una pregunta por su identificador.
+     */
+    @Override
+    public Optional<Pregunta> buscarPorId(String preguntaId) {
+
+        if (preguntaId == null || preguntaId.isBlank()) {
+            return Optional.empty();
+        }
+
+        String sqlPregunta = """
+                SELECT *
+                FROM preguntas
+                WHERE id = ?
+                """;
+
+        String sqlDistractores = """
+                SELECT texto
+                FROM distractores
+                WHERE pregunta_id = ?
+                ORDER BY posicion
+                """;
+
+        try (Connection conexion = conectar();
+             PreparedStatement psPregunta =
+                     conexion.prepareStatement(sqlPregunta)) {
+
+            psPregunta.setString(1, preguntaId);
+
+            try (ResultSet resultado =
+                         psPregunta.executeQuery()) {
+
+                if (!resultado.next()) {
+                    return Optional.empty();
+                }
+
+                List<String> distractores = new ArrayList<>();
+
+                try (PreparedStatement psDistractores =
+                             conexion.prepareStatement(sqlDistractores)) {
+
+                    psDistractores.setString(1, preguntaId);
+
+                    try (ResultSet opciones =
+                                 psDistractores.executeQuery()) {
+
+                        while (opciones.next()) {
+                            distractores.add(
+                                    opciones.getString("texto")
+                            );
+                        }
+                    }
+                }
+
+                Pregunta pregunta = Pregunta.reconstruir(
+                        resultado.getString("id"),
+                        resultado.getString("autor_id"),
+                        resultado.getString("contexto"),
+                        resultado.getString("pregunta_directa"),
+                        distractores,
+                        resultado.getString("respuesta_correcta"),
+                        resultado.getString("justificacion"),
+                        resultado.getString("bibliografia"),
+                        resultado.getString("competencia"),
+                        resultado.getString("tema"),
+                        resultado.getString("subtema"),
+                        resultado.getString("dificultad"),
+                        EstadoPregunta.valueOf(
+                                resultado.getString("estado")
+                        )
+                );
+
+                return Optional.of(pregunta);
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Error al buscar la pregunta", e
+            );
+        }
+    }
+
+    /**
+     * Actualiza el estado si coinciden el autor y el estado anterior.
+     */
+    @Override
+    public boolean actualizarEstado(
+            String preguntaId,
+            String autorId,
+            EstadoPregunta estadoAnterior,
+            EstadoPregunta estadoNuevo) {
+
+        if (preguntaId == null || preguntaId.isBlank()
+                || autorId == null || autorId.isBlank()) {
+            return false;
+        }
+
+        Objects.requireNonNull(
+                estadoAnterior,
+                "El estado anterior es obligatorio"
+        );
+
+        Objects.requireNonNull(
+                estadoNuevo,
+                "El estado nuevo es obligatorio"
+        );
+
+        String sql = """
+                UPDATE preguntas
+                SET estado = ?
+                WHERE id = ?
+                  AND autor_id = ?
+                  AND estado = ?
+                """;
+
+        try (Connection conexion = conectar();
+             PreparedStatement ps =
+                     conexion.prepareStatement(sql)) {
+
+            ps.setString(1, estadoNuevo.name());
+            ps.setString(2, preguntaId);
+            ps.setString(3, autorId);
+            ps.setString(4, estadoAnterior.name());
+
+            return ps.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Error al actualizar el estado", e
+            );
         }
     }
 }
