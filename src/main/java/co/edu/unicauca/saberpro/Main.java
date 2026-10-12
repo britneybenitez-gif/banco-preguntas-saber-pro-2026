@@ -3,18 +3,27 @@ package co.edu.unicauca.saberpro;
 
 import co.edu.unicauca.saberpro.domain.model.RolUsuario;
 import co.edu.unicauca.saberpro.domain.model.SesionUsuario;
+
 import co.edu.unicauca.saberpro.domain.service.IPreguntaService;
 import co.edu.unicauca.saberpro.domain.service.IPreguntaEstadoService;
+import co.edu.unicauca.saberpro.domain.service.IConsultaPreguntaService;
 import co.edu.unicauca.saberpro.domain.service.PreguntaServiceImpl;
 import co.edu.unicauca.saberpro.domain.service.PreguntaEstadoServiceImpl;
+import co.edu.unicauca.saberpro.domain.service.ConsultaPreguntaServiceImpl;
 import co.edu.unicauca.saberpro.domain.service.ServicioRegistroAutorizado;
+
 import co.edu.unicauca.saberpro.domain.validation.ValidadorCamposObligatorios;
 import co.edu.unicauca.saberpro.domain.validation.ValidadorOpciones;
+
 import co.edu.unicauca.saberpro.infrastructure.persistence.SqlitePreguntaRepository;
+
 import co.edu.unicauca.saberpro.presentation.controller.RegistroPreguntaController;
 import co.edu.unicauca.saberpro.presentation.controller.PreguntaEstadoController;
+import co.edu.unicauca.saberpro.presentation.controller.ConsultaPreguntaController;
+
 import co.edu.unicauca.saberpro.presentation.view.RegistroPreguntaView;
 import co.edu.unicauca.saberpro.presentation.view.PreguntaEstadoView;
+import co.edu.unicauca.saberpro.presentation.view.ConsultaPreguntaView;
 
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -61,19 +70,19 @@ public class Main {
 
         try {
 
-            // Repositorio compartido por HU-01 y HU-02.
+            // Repositorio compartido por las tres historias de usuario.
             SqlitePreguntaRepository repositorio =
                     new SqlitePreguntaRepository(
                             Path.of("data", "banco_preguntas.db")
                     );
 
-            // Sesión utilizada por ambas historias de usuario.
+            // Sesión utilizada por HU-01, HU-02 y HU-03.
             SesionUsuario sesion = new SesionUsuario(
                     "AUTOR_DEMO",
                     RolUsuario.AUTOR
             );
 
-            // Servicios y controlador de HU-01.
+            // HU-01: registro de preguntas.
             IPreguntaService servicioBase =
                     new PreguntaServiceImpl(
                             repositorio,
@@ -94,7 +103,7 @@ public class Main {
                             servicioRegistro
                     );
 
-            // Servicio y controlador de HU-02.
+            // HU-02: envío de preguntas a revisión.
             IPreguntaEstadoService servicioEstado =
                     new PreguntaEstadoServiceImpl(
                             repositorio,
@@ -106,18 +115,30 @@ public class Main {
                             servicioEstado
                     );
 
-            // Ventana principal de registro.
+            // HU-03: consulta de preguntas del autor.
+            IConsultaPreguntaService servicioConsulta =
+                    new ConsultaPreguntaServiceImpl(
+                            repositorio,
+                            sesion
+                    );
+
+            ConsultaPreguntaController controladorConsulta =
+                    new ConsultaPreguntaController(
+                            servicioConsulta
+                    );
+
+            // Ventana principal de HU-01.
             RegistroPreguntaView vistaRegistro =
                     new RegistroPreguntaView(
                             controladorRegistro,
                             sesion.usuarioId()
                     );
 
-            // Menú para acceder a HU-02.
+            // Menú principal de preguntas.
             JMenuBar barraMenu = new JMenuBar();
-
             JMenu menuPreguntas = new JMenu("Preguntas");
 
+            // Opción de HU-02.
             JMenuItem opcionRevision = new JMenuItem(
                     "Enviar a revisión (HU-02)"
             );
@@ -132,7 +153,25 @@ public class Main {
                 vistaEstado.setVisible(true);
             });
 
+            // Opción de HU-03.
+            JMenuItem opcionMisPreguntas = new JMenuItem(
+                    "Mis preguntas (HU-03)"
+            );
+
+            opcionMisPreguntas.addActionListener(evento -> {
+
+                ConsultaPreguntaView vistaConsulta =
+                        new ConsultaPreguntaView(
+                                controladorConsulta
+                        );
+
+                vistaConsulta.setVisible(true);
+            });
+
+            // Agregar las opciones al menú.
             menuPreguntas.add(opcionRevision);
+            menuPreguntas.add(opcionMisPreguntas);
+
             barraMenu.add(menuPreguntas);
 
             vistaRegistro.setJMenuBar(barraMenu);
