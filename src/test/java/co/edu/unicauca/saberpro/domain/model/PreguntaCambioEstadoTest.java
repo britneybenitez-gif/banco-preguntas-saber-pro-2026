@@ -71,4 +71,61 @@ class PreguntaCambioEstadoTest {
                 "Media"
         );
     }
+    
+    
+    @Test
+    void debeReconstruirPreguntaConIdYEstadoOriginal() {
+
+        Pregunta pregunta = Pregunta.reconstruir(
+                "P001",
+                "AUTOR01",
+                "Contexto de prueba",
+                "¿Cuál es la respuesta correcta?",
+                List.of("A", "B", "C", "D"),
+                "E",
+                "Justificación",
+                "Bibliografía",
+                "Lectura crítica",
+                "Comprensión",
+                "Interpretación",
+                "Media",
+                EstadoPregunta.PENDIENTE_REVISION
+        );
+
+        assertEquals("P001", pregunta.getId());
+        assertEquals(
+                EstadoPregunta.PENDIENTE_REVISION,
+                pregunta.getEstado()
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                pregunta::enviarARevision
+        );
+    }
+
+    @Test
+    void debeRechazarReconstruccionSinIdentificador() {
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Pregunta.reconstruir(
+                        "",
+                        "AUTOR01",
+                        "Contexto",
+                        "Pregunta directa",
+                        List.of("A", "B", "C", "D"),
+                        "E",
+                        "Justificación",
+                        "Bibliografía",
+                        "Competencia",
+                        "Tema",
+                        "Subtema",
+                        "Media",
+                        EstadoPregunta.BORRADOR
+                )
+        );
+    }
+
+
 }

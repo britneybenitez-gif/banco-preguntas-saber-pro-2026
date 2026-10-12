@@ -4,6 +4,7 @@ package co.edu.unicauca.saberpro.domain.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -26,19 +27,7 @@ public class Pregunta {
     private EstadoPregunta estado;
 
     /**
-     * Crea una pregunta con identificador único y estado BORRADOR.
-     *
-     * @param autorId identificador del autor
-     * @param contexto contexto de la pregunta
-     * @param preguntaDirecta enunciado
-     * @param distractores opciones incorrectas
-     * @param respuestaCorrecta opción correcta
-     * @param justificacion explicación de la respuesta
-     * @param bibliografia fuentes consultadas
-     * @param competencia competencia evaluada
-     * @param tema tema principal
-     * @param subtema subtema
-     * @param dificultad nivel de dificultad
+     * Crea una pregunta nueva en estado BORRADOR.
      */
     public Pregunta(
             String autorId,
@@ -53,7 +42,48 @@ public class Pregunta {
             String subtema,
             String dificultad) {
 
-        this.id = UUID.randomUUID().toString();
+        this(
+                UUID.randomUUID().toString(),
+                autorId,
+                contexto,
+                preguntaDirecta,
+                distractores,
+                respuestaCorrecta,
+                justificacion,
+                bibliografia,
+                competencia,
+                tema,
+                subtema,
+                dificultad,
+                EstadoPregunta.BORRADOR
+        );
+    }
+
+    /**
+     * Inicializa una pregunta con identificador y estado definidos.
+     */
+    private Pregunta(
+            String id,
+            String autorId,
+            String contexto,
+            String preguntaDirecta,
+            List<String> distractores,
+            String respuestaCorrecta,
+            String justificacion,
+            String bibliografia,
+            String competencia,
+            String tema,
+            String subtema,
+            String dificultad,
+            EstadoPregunta estado) {
+
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El identificador es obligatorio."
+            );
+        }
+
+        this.id = id;
         this.autorId = autorId;
         this.contexto = contexto;
         this.preguntaDirecta = preguntaDirecta;
@@ -61,7 +91,8 @@ public class Pregunta {
         this.distractores = distractores == null
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(
-                        new ArrayList<>(distractores));
+                        new ArrayList<>(distractores)
+                );
 
         this.respuestaCorrecta = respuestaCorrecta;
         this.justificacion = justificacion;
@@ -70,13 +101,49 @@ public class Pregunta {
         this.tema = tema;
         this.subtema = subtema;
         this.dificultad = dificultad;
-        this.estado = EstadoPregunta.BORRADOR;
+        this.estado = Objects.requireNonNull(
+                estado,
+                "El estado es obligatorio."
+        );
     }
 
     /**
-     * Cambia una pregunta en borrador a pendiente de revisión.
-     *
-     * @throws IllegalStateException si no está en borrador
+     * Reconstruye una pregunta almacenada en la base de datos.
+     */
+    public static Pregunta reconstruir(
+            String id,
+            String autorId,
+            String contexto,
+            String preguntaDirecta,
+            List<String> distractores,
+            String respuestaCorrecta,
+            String justificacion,
+            String bibliografia,
+            String competencia,
+            String tema,
+            String subtema,
+            String dificultad,
+            EstadoPregunta estado) {
+
+        return new Pregunta(
+                id,
+                autorId,
+                contexto,
+                preguntaDirecta,
+                distractores,
+                respuestaCorrecta,
+                justificacion,
+                bibliografia,
+                competencia,
+                tema,
+                subtema,
+                dificultad,
+                estado
+        );
+    }
+
+    /**
+     * Envía una pregunta en borrador a revisión.
      */
     public void enviarARevision() {
 
