@@ -73,6 +73,22 @@ public class Pregunta {
         this.estado = EstadoPregunta.BORRADOR;
     }
 
+    /**
+     * Cambia una pregunta en borrador a pendiente de revisión.
+     *
+     * @throws IllegalStateException si no está en borrador
+     */
+    public void enviarARevision() {
+
+        if (estado != EstadoPregunta.BORRADOR) {
+            throw new IllegalStateException(
+                    "Solo las preguntas en BORRADOR pueden enviarse a revisión."
+            );
+        }
+
+        this.estado = EstadoPregunta.PENDIENTE_REVISION;
+    }
+
     public String getId() {
         return id;
     }
