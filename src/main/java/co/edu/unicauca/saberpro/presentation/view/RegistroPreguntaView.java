@@ -456,11 +456,25 @@ public class RegistroPreguntaView extends JFrame {
 
                     List<String> errores = get();
 
+                   
                     if (errores.isEmpty()) {
+
+                        // Permite copiar el identificador generado.
+                        JTextField campoIdRegistrada =
+                                new JTextField(
+                                        pregunta.getId(), 36
+                                );
+
+                        campoIdRegistrada.setEditable(false);
+                        campoIdRegistrada.selectAll();
 
                         JOptionPane.showMessageDialog(
                                 RegistroPreguntaView.this,
-                                "Pregunta registrada correctamente.",
+                                new Object[]{
+                                        "Pregunta registrada correctamente.",
+                                        "Copia este identificador para enviarla a revisión:",
+                                        campoIdRegistrada
+                                },
                                 "Registro exitoso",
                                 JOptionPane.INFORMATION_MESSAGE
                         );

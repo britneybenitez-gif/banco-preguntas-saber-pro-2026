@@ -40,6 +40,28 @@ public class PreguntaEstadoServiceImpl
                 "La sesión es obligatoria."
         );
     }
+     
+    /**
+     * Consulta una pregunta si pertenece al autor en sesión.
+     */
+    @Override
+    public Optional<Pregunta> consultarPregunta(String preguntaId) {
+
+        if (sesion.rol() != RolUsuario.AUTOR) {
+            return Optional.empty();
+        }
+
+        if (preguntaId == null || preguntaId.isBlank()) {
+            return Optional.empty();
+        }
+
+        return repositorio.buscarPorId(preguntaId)
+                .filter(pregunta ->
+                        sesion.usuarioId().equals(
+                                pregunta.getAutorId()
+                        )
+                );
+    }
 
     /**
      * Valida y actualiza el estado de una pregunta.
@@ -99,4 +121,5 @@ public class PreguntaEstadoServiceImpl
 
         return List.of();
     }
+
 }

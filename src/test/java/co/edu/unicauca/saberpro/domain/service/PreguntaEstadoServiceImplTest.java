@@ -221,6 +221,100 @@ class PreguntaEstadoServiceImplTest {
         assertEquals(EstadoPregunta.BORRADOR, pregunta.getEstado());
         assertEquals(1, repositorio.actualizaciones);
     }
+    /**
+     * Verifica que un autor pueda consultar sus propias preguntas.
+     */
+    @Test
+    void autorPuedeConsultarSuPropiaPregunta() {
+
+        Pregunta pregunta = crearPregunta("AUTOR01");
+        RepositorioFalso repositorio = new RepositorioFalso(pregunta);
+
+        IPreguntaEstadoService servicio = crearServicio(
+                repositorio,
+                "AUTOR01",
+                RolUsuario.AUTOR
+        );
+
+        Optional<Pregunta> resultado =
+                servicio.consultarPregunta(pregunta.getId());
+
+        assertTrue(resultado.isPresent());
+        assertEquals(
+                pregunta.getId(),
+                resultado.orElseThrow().getId()
+        );
+        assertEquals(1, repositorio.consultas);
+    }
+     /**
+     * Verifica que un autor no pueda consultar preguntas ajenas.
+     */
+    @Test
+    void autorNoPuedeConsultarPreguntaDeOtroAutor() {
+
+        Pregunta pregunta = crearPregunta("AUTOR02");
+        RepositorioFalso repositorio = new RepositorioFalso(pregunta);
+
+        IPreguntaEstadoService servicio = crearServicio(
+                repositorio,
+                "AUTOR01",
+                RolUsuario.AUTOR
+        );
+
+        Optional<Pregunta> resultado =
+                servicio.consultarPregunta(pregunta.getId());
+
+        assertTrue(resultado.isEmpty());
+        assertEquals(1, repositorio.consultas);
+    }
+     /**
+     * Verifica que otros roles no puedan consultar preguntas.
+     */
+    @Test
+    void administradorYRevisorNoPuedenConsultarPreguntas() {
+
+        Pregunta pregunta = crearPregunta("AUTOR01");
+        RepositorioFalso repositorio = new RepositorioFalso(pregunta);
+
+        for (RolUsuario rol : List.of(
+                RolUsuario.ADMINISTRADOR,
+                RolUsuario.REVISOR)) {
+
+            IPreguntaEstadoService servicio = crearServicio(
+                    repositorio,
+                    "USUARIO01",
+                    rol
+            );
+
+            assertTrue(
+                    servicio.consultarPregunta(pregunta.getId()).isEmpty()
+            );
+        }
+
+        assertEquals(0, repositorio.consultas);
+    }
+    /**
+     * Verifica el manejo de identificadores inexistentes o inválidos.
+     */
+    @Test
+    void consultaInexistenteOInvalidaDevuelveVacio() {
+
+        Pregunta pregunta = crearPregunta("AUTOR01");
+        RepositorioFalso repositorio = new RepositorioFalso(pregunta);
+
+        IPreguntaEstadoService servicio = crearServicio(
+                repositorio,
+                "AUTOR01",
+                RolUsuario.AUTOR
+        );
+
+        assertTrue(servicio.consultarPregunta("P999").isEmpty());
+        assertTrue(servicio.consultarPregunta("").isEmpty());
+        assertTrue(servicio.consultarPregunta(null).isEmpty());
+
+        assertEquals(1, repositorio.consultas);
+    }
+
 
     /**
      * Construye el servicio con una sesión de prueba.
