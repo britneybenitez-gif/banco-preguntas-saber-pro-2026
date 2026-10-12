@@ -42,3 +42,6 @@ Thumbs.db
 # Archivos de entorno local
 .env
 .env.*
+
+# Base de datos local
+/data/
