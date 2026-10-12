@@ -15,27 +15,30 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Implementa las reglas de negocio para asignar revisores
- * a preguntas pendientes de revisión.
+ * Implementa la asignación de revisores y solicita
+ * las notificaciones de correo correspondientes.
  */
 public class AsignacionRevisionServiceImpl
         implements IAsignacionRevisionService {
 
     private final IAsignacionRevisionRepository repositorioAsignaciones;
     private final IEstadoPreguntaRepository repositorioPreguntas;
+    private final INotificadorRevision notificador;
     private final SesionUsuario sesion;
 
     /**
      * Inicializa el servicio con sus dependencias.
      *
-     * @param repositorioAsignaciones repositorio de revisores
-     * @param repositorioPreguntas repositorio de preguntas
+     * @param repositorioAsignaciones persistencia de asignaciones
+     * @param repositorioPreguntas consulta de preguntas
      * @param sesion usuario que realiza la operación
+     * @param notificador componente de notificaciones
      */
     public AsignacionRevisionServiceImpl(
             IAsignacionRevisionRepository repositorioAsignaciones,
             IEstadoPreguntaRepository repositorioPreguntas,
-            SesionUsuario sesion) {
+            SesionUsuario sesion,
+            INotificadorRevision notificador) {
 
         this.repositorioAsignaciones = Objects.requireNonNull(
                 repositorioAsignaciones,
@@ -49,16 +52,22 @@ public class AsignacionRevisionServiceImpl
 
         this.sesion = Objects.requireNonNull(
                 sesion,
-                "La sesión del usuario es obligatoria."
+                "La sesión es obligatoria."
+        );
+
+        this.notificador = Objects.requireNonNull(
+                notificador,
+                "El notificador es obligatorio."
         );
     }
 
     /**
-     * Asigna un revisor a una pregunta pendiente.
+     * Asigna un revisor a una pregunta pendiente y,
+     * cuando la asignación es nueva, solicita su notificación.
      *
      * @param preguntaId identificador de la pregunta
      * @param revisorId identificador del revisor
-     * @return true si la asignación fue registrada
+     * @return true si se registró una nueva asignación
      */
     @Override
     public boolean asignarRevisor(
@@ -77,6 +86,7 @@ public class AsignacionRevisionServiceImpl
                 "El identificador del revisor es obligatorio."
         );
 
+        // 1. Consultar la pregunta.
         Pregunta pregunta = repositorioPreguntas
                 .buscarPorId(preguntaId)
                 .orElseThrow(() ->
@@ -85,15 +95,17 @@ public class AsignacionRevisionServiceImpl
                         )
                 );
 
+        // 2. Verificar su estado.
         if (pregunta.getEstado()
                 != EstadoPregunta.PENDIENTE_REVISION) {
 
             throw new IllegalStateException(
-                    "Solo se pueden asignar revisores a "
-                    + "preguntas pendientes de revisión."
+                    "Solo se pueden asignar revisores "
+                    + "a preguntas pendientes de revisión."
             );
         }
 
+        // 3. Consultar el docente revisor.
         Revisor revisor = repositorioAsignaciones
                 .buscarRevisorPorId(revisorId)
                 .orElseThrow(() ->
@@ -102,6 +114,7 @@ public class AsignacionRevisionServiceImpl
                         )
                 );
 
+        // 4. Construir la asignación.
         AsignacionRevision asignacion =
                 new AsignacionRevision(
                         pregunta.getId(),
@@ -110,14 +123,40 @@ public class AsignacionRevisionServiceImpl
                         Instant.now()
                 );
 
-        return repositorioAsignaciones
+        // 5. Guardar en SQLite.
+        boolean guardada = repositorioAsignaciones
                 .guardarAsignacion(asignacion);
+
+        // No enviar otro correo si ya estaba asignado.
+        if (!guardada) {
+            return false;
+        }
+
+        // 6. Solicitar el envío de la notificación.
+        try {
+
+            notificador.notificarAsignacion(
+                    revisor,
+                    pregunta
+            );
+
+        } catch (RuntimeException e) {
+
+            throw new NotificacionRevisionException(
+                    "La asignación quedó guardada, "
+                    + "pero falló el envío del correo "
+                    + "al revisor.",
+                    e
+            );
+        }
+
+        return true;
     }
 
     /**
-     * Consulta los revisores disponibles para asignación.
+     * Consulta los revisores registrados.
      *
-     * @return revisores registrados
+     * @return docentes disponibles
      */
     @Override
     public List<Revisor> listarRevisores() {
@@ -128,7 +167,7 @@ public class AsignacionRevisionServiceImpl
     }
 
     /**
-     * Consulta las asignaciones de una pregunta.
+     * Consulta los revisores asignados a una pregunta.
      *
      * @param preguntaId identificador de la pregunta
      * @return asignaciones encontradas
@@ -149,8 +188,7 @@ public class AsignacionRevisionServiceImpl
     }
 
     /**
-     * Impide que usuarios distintos al administrador
-     * realicen operaciones administrativas.
+     * Valida que el usuario tenga permisos administrativos.
      */
     private void verificarAdministrador() {
 
@@ -164,10 +202,10 @@ public class AsignacionRevisionServiceImpl
     }
 
     /**
-     * Verifica que un identificador tenga contenido.
+     * Valida que un identificador no esté vacío.
      *
-     * @param identificador valor que se desea validar
-     * @param mensaje error que se mostrará si es inválido
+     * @param identificador dato que se desea comprobar
+     * @param mensaje mensaje del error
      */
     private void validarIdentificador(
             String identificador,

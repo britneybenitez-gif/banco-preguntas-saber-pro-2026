@@ -449,11 +449,16 @@ class AsignacionRevisionServiceImplTest {
                 rol
         );
 
-        return new AsignacionRevisionServiceImpl(
-                asignaciones,
-                preguntas,
-                sesion
-        );
+         
+return new AsignacionRevisionServiceImpl(
+        asignaciones,
+        preguntas,
+        sesion,
+        (revisor, pregunta) -> {
+            // Notificador simulado para las pruebas de autorización.
+        }
+);
+
     }
 
     /**

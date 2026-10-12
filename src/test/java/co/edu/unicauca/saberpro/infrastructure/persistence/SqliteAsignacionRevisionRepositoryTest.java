@@ -6,6 +6,11 @@ import co.edu.unicauca.saberpro.domain.model.EstadoPregunta;
 import co.edu.unicauca.saberpro.domain.model.Pregunta;
 import co.edu.unicauca.saberpro.domain.model.Revisor;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -453,4 +458,140 @@ class SqliteAsignacionRevisionRepositoryTest {
                 Instant.parse("2026-10-12T15:00:00Z")
         );
     }
+    
+/**
+ * Verifica que una asignación nueva cree automáticamente
+ * una notificación pendiente mediante el trigger de SQLite.
+ *
+ * @throws SQLException si ocurre un error de consulta
+ */
+@Test
+void debeCrearNotificacionPendienteAlAsignar()
+        throws SQLException {
+
+    Pregunta pregunta = crearPregunta(true);
+
+    Revisor revisor = crearRevisor(
+            "REV001",
+            "Juan Perez",
+            "juan@unicauca.edu.co"
+    );
+
+    repositorioAsignaciones.guardarRevisor(revisor);
+
+    AsignacionRevision asignacion = crearAsignacion(
+            pregunta.getId(),
+            "REV001"
+    );
+
+    assertTrue(
+            repositorioAsignaciones.guardarAsignacion(
+                    asignacion
+            )
+    );
+
+    String sql = """
+            SELECT estado, intentos
+            FROM notificaciones_revision
+            WHERE pregunta_id = ?
+              AND revisor_id = ?
+            """;
+
+    String url = "jdbc:sqlite:"
+            + rutaBaseDatos.toAbsolutePath();
+
+    try (Connection conexion =
+                 DriverManager.getConnection(url);
+         PreparedStatement ps =
+                 conexion.prepareStatement(sql)) {
+
+        ps.setString(1, pregunta.getId());
+        ps.setString(2, "REV001");
+
+        try (ResultSet resultado = ps.executeQuery()) {
+
+            assertTrue(resultado.next());
+
+            assertEquals(
+                    "PENDIENTE",
+                    resultado.getString("estado")
+            );
+
+            assertEquals(
+                    0,
+                    resultado.getInt("intentos")
+            );
+
+            assertFalse(resultado.next());
+        }
+    }
+}
+
+/**
+ * Verifica que intentar repetir una asignación
+ * no produzca una segunda notificación.
+ *
+ * @throws SQLException si ocurre un error de consulta
+ */
+@Test
+void asignacionDuplicadaNoDuplicaNotificacion()
+        throws SQLException {
+
+    Pregunta pregunta = crearPregunta(true);
+
+    Revisor revisor = crearRevisor(
+            "REV001",
+            "Juan Perez",
+            "juan@unicauca.edu.co"
+    );
+
+    repositorioAsignaciones.guardarRevisor(revisor);
+
+    AsignacionRevision asignacion = crearAsignacion(
+            pregunta.getId(),
+            "REV001"
+    );
+
+    assertTrue(
+            repositorioAsignaciones.guardarAsignacion(
+                    asignacion
+            )
+    );
+
+    assertFalse(
+            repositorioAsignaciones.guardarAsignacion(
+                    asignacion
+            )
+    );
+
+    String sql = """
+            SELECT COUNT(*) AS total
+            FROM notificaciones_revision
+            WHERE pregunta_id = ?
+              AND revisor_id = ?
+            """;
+
+    String url = "jdbc:sqlite:"
+            + rutaBaseDatos.toAbsolutePath();
+
+    try (Connection conexion =
+                 DriverManager.getConnection(url);
+         PreparedStatement ps =
+                 conexion.prepareStatement(sql)) {
+
+        ps.setString(1, pregunta.getId());
+        ps.setString(2, "REV001");
+
+        try (ResultSet resultado = ps.executeQuery()) {
+
+            assertTrue(resultado.next());
+
+            assertEquals(
+                    1,
+                    resultado.getInt("total")
+            );
+        }
+    }
+}
+
 }

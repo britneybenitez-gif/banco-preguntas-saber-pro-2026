@@ -22,8 +22,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Implementa la persistencia de revisores y asignaciones
- * mediante SQLite.
+ * Implementa la persistencia de revisores, asignaciones
+ * y notificaciones pendientes mediante SQLite.
  */
 public class SqliteAsignacionRevisionRepository
         implements IAsignacionRevisionRepository {
@@ -64,9 +64,9 @@ public class SqliteAsignacionRevisionRepository
     }
 
     /**
-     * Abre una conexión con las claves foráneas habilitadas.
+     * Abre una conexión SQLite habilitando las claves foráneas.
      *
-     * @return conexión SQLite
+     * @return conexión activa
      * @throws SQLException si falla la conexión
      */
     private Connection conectar() throws SQLException {
@@ -87,7 +87,10 @@ public class SqliteAsignacionRevisionRepository
     }
 
     /**
-     * Crea las tablas de revisores y asignaciones.
+     * Crea las tablas de revisores, asignaciones y notificaciones.
+     *
+     * Un trigger registra una notificación pendiente cuando
+     * se crea una nueva asignación.
      */
     private void crearTablas() {
 
@@ -116,6 +119,48 @@ public class SqliteAsignacionRevisionRepository
                 )
                 """;
 
+        String tablaNotificaciones = """
+                CREATE TABLE IF NOT EXISTS notificaciones_revision (
+                    pregunta_id TEXT NOT NULL,
+                    revisor_id TEXT NOT NULL,
+                    estado TEXT NOT NULL DEFAULT 'PENDIENTE',
+                    intentos INTEGER NOT NULL DEFAULT 0,
+                    ultimo_error TEXT,
+
+                    PRIMARY KEY (pregunta_id, revisor_id),
+
+                    CHECK (estado IN ('PENDIENTE', 'ENVIADA')),
+
+                    FOREIGN KEY (pregunta_id, revisor_id)
+                        REFERENCES asignaciones_revision(
+                            pregunta_id,
+                            revisor_id
+                        )
+                )
+                """;
+
+        String disparadorNotificacion = """
+                CREATE TRIGGER IF NOT EXISTS
+                    trg_notificacion_nueva_asignacion
+
+                AFTER INSERT ON asignaciones_revision
+
+                BEGIN
+                    INSERT INTO notificaciones_revision (
+                        pregunta_id,
+                        revisor_id,
+                        estado,
+                        intentos
+                    )
+                    VALUES (
+                        NEW.pregunta_id,
+                        NEW.revisor_id,
+                        'PENDIENTE',
+                        0
+                    );
+                END;
+                """;
+
         String indice = """
                 CREATE INDEX IF NOT EXISTS
                     idx_asignaciones_revisor
@@ -127,12 +172,15 @@ public class SqliteAsignacionRevisionRepository
 
             sentencia.execute(tablaRevisores);
             sentencia.execute(tablaAsignaciones);
+            sentencia.execute(tablaNotificaciones);
+            sentencia.execute(disparadorNotificacion);
             sentencia.execute(indice);
 
         } catch (SQLException e) {
 
             throw new IllegalStateException(
-                    "Error al crear las tablas de asignaciones.",
+                    "Error al crear las tablas de asignaciones "
+                    + "y notificaciones.",
                     e
             );
         }
@@ -179,7 +227,7 @@ public class SqliteAsignacionRevisionRepository
     /**
      * Busca un revisor mediante su identificador.
      *
-     * @param revisorId identificador del revisor
+     * @param revisorId identificador del docente
      * @return revisor encontrado o resultado vacío
      */
     @Override
@@ -249,13 +297,13 @@ public class SqliteAsignacionRevisionRepository
 
             while (resultado.next()) {
 
-                revisores.add(
-                        new Revisor(
-                                resultado.getString("id"),
-                                resultado.getString("nombre"),
-                                resultado.getString("correo")
-                        )
+                Revisor revisor = new Revisor(
+                        resultado.getString("id"),
+                        resultado.getString("nombre"),
+                        resultado.getString("correo")
                 );
+
+                revisores.add(revisor);
             }
 
             return revisores;
@@ -272,10 +320,14 @@ public class SqliteAsignacionRevisionRepository
     /**
      * Registra la asignación de un revisor a una pregunta.
      *
-     * Solo permite preguntas pendientes y evita duplicados.
+     * Solo permite asignaciones de preguntas pendientes.
+     * Evita duplicados mediante la clave primaria compuesta.
+     *
+     * El trigger SQLite registra automáticamente
+     * una notificación pendiente si la asignación es nueva.
      *
      * @param asignacion asignación que se desea guardar
-     * @return true si se guardó una asignación nueva
+     * @return true si se registró una nueva asignación
      */
     @Override
     public boolean guardarAsignacion(
@@ -308,23 +360,40 @@ public class SqliteAsignacionRevisionRepository
              PreparedStatement ps =
                      conexion.prepareStatement(sql)) {
 
-            ps.setString(1, asignacion.preguntaId());
-            ps.setString(2, asignacion.revisorId());
-            ps.setString(3, asignacion.administradorId());
+            ps.setString(
+                    1,
+                    asignacion.preguntaId()
+            );
+
+            ps.setString(
+                    2,
+                    asignacion.revisorId()
+            );
+
+            ps.setString(
+                    3,
+                    asignacion.administradorId()
+            );
 
             ps.setString(
                     4,
                     asignacion.fechaAsignacion().toString()
             );
 
-            ps.setString(5, asignacion.preguntaId());
+            ps.setString(
+                    5,
+                    asignacion.preguntaId()
+            );
 
             ps.setString(
                     6,
                     EstadoPregunta.PENDIENTE_REVISION.name()
             );
 
-            ps.setString(7, asignacion.revisorId());
+            ps.setString(
+                    7,
+                    asignacion.revisorId()
+            );
 
             return ps.executeUpdate() == 1;
 
@@ -341,7 +410,7 @@ public class SqliteAsignacionRevisionRepository
      * Consulta las asignaciones de una pregunta.
      *
      * @param preguntaId identificador de la pregunta
-     * @return asignaciones encontradas
+     * @return lista de asignaciones registradas
      */
     @Override
     public List<AsignacionRevision> listarAsignaciones(
@@ -377,9 +446,15 @@ public class SqliteAsignacionRevisionRepository
 
                     AsignacionRevision asignacion =
                             new AsignacionRevision(
-                                    resultado.getString("pregunta_id"),
-                                    resultado.getString("revisor_id"),
-                                    resultado.getString("administrador_id"),
+                                    resultado.getString(
+                                            "pregunta_id"
+                                    ),
+                                    resultado.getString(
+                                            "revisor_id"
+                                    ),
+                                    resultado.getString(
+                                            "administrador_id"
+                                    ),
                                     Instant.parse(
                                             resultado.getString(
                                                     "fecha_asignacion"
