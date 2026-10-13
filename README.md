@@ -409,7 +409,7 @@ El desarrollo y la documentación corresponden a una única desarrolladora: **Br
 
 | Recurso | Enlace |
 |---|---|
-| **Tablero y sprints en Jira** | [Abrir proyecto PSP2](https://banco-preguntas-unicauca.atlassian.net/jira/software/projects/PSP2) |
+| **Tablero y sprints en Jira** | [Abrir proyecto PSP2](https://banco-preguntas-unicauca.atlassian.net/jira/software/projects/PSP2/summary) |
 | **Documento de arquitectura y requisitos (PDF)** | [Ver documento](docs/Banco_Preguntas_Saber_Pro_Documento_Final.pdf) |
 | **Backlog y seguimiento de sprints (Excel)** | [Descargar Excel](docs/Backlog_Jira_PSP2_Saber_Pro_2026.xlsx) |
 | **Sustentación (carpeta de Google Drive)** | [Abrir carpeta de Drive](https://drive.google.com/drive/folders/1_5HzJgT9fSfKCVkjcS_2WyRDT6QKCIa8?usp=sharing) |
