@@ -1,114 +1,117 @@
+
 # Banco de Preguntas Saber Pro
 
 **Universidad del Cauca**  
 **Programa:** Ingeniería de Sistemas  
 **Asignatura:** Ingeniería de Software II  
-**Periodo académico:** 2026.2
+**Periodo académico:** 2026.2  
+**Desarrollo:** Proyecto académico individual
 
-**Aplicación de escritorio desarrollada en Java para la gestión de preguntas Saber Pro.**
+**Aplicación de escritorio desarrollada en Java para el registro, consulta y gestión de preguntas Saber Pro.**
 
 ---
 
 ## 1. Descripción del proyecto
 
-**Banco de Preguntas Saber Pro** es una aplicación académica que permite registrar, validar, consultar y administrar preguntas de selección múltiple con única respuesta.
+**Banco de Preguntas Saber Pro** es una aplicación académica de escritorio que permite registrar, validar, consultar y gestionar preguntas de selección múltiple con única respuesta.
 
-El sistema facilita el proceso de construcción y revisión de preguntas mediante dos perfiles: **Autor** y **Administrador**.
+El sistema apoya el proceso de construcción y revisión de preguntas mediante dos perfiles demostrativos: **Autor** y **Administrador**. No dispone de autenticación real de usuarios.
 
-El proyecto fue desarrollado utilizando una arquitectura monolítica de tres capas, el patrón de arquitectura MVC, principios SOLID y mecanismos de persistencia con SQLite.
+Se implementó en **Java 21 y Java Swing**, con una arquitectura monolítica de **tres capas** (presentación, dominio e infraestructura), el patrón **MVC**, principios **SOLID**, patrones de diseño y persistencia local mediante **SQLite**.
 
-La implementación comprende las cuatro historias de usuario correspondientes al primer corte de Ingeniería de Software II.
+La primera entrega comprende las cuatro historias de usuario **HU-01 a HU-04**. El proyecto fue desarrollado individualmente y se gestionó mediante GitHub y Jira.
+
+---
 
 ## 2. Historias de usuario implementadas
 
 | Historia | Funcionalidad | Estado |
 |---|---|---|
-| **HU-01** | Registrar preguntas Saber Pro con sus respectivos campos y validaciones estructurales. | Implementada |
-| **HU-02** | Cambiar el estado de las preguntas de borrador a pendiente de revisión. | Implementada |
-| **HU-03** | Consultar las preguntas del autor mediante filtros, paginación y visualización de detalles. | Implementada |
-| **HU-04** | Registrar docentes revisores, asignarlos a preguntas pendientes y enviar notificaciones por correo electrónico. | Implementada |
+| **HU-01** | Registrar preguntas Saber Pro con validaciones estructurales. | Implementada |
+| **HU-02** | Enviar preguntas propias desde BORRADOR a PENDIENTE_REVISION. | Implementada |
+| **HU-03** | Consultar preguntas del autor con filtros, paginación y detalles. | Implementada |
+| **HU-04** | Registrar docentes revisores, asignarlos a preguntas pendientes, notificar por correo y reintentar envíos fallidos. | Implementada |
 
 ### HU-01. Registro de preguntas
 
-Permite al autor registrar preguntas de selección múltiple con única respuesta.
-
-Cada pregunta contiene:
+El perfil **Autor** permite registrar preguntas con los siguientes datos:
 
 - Contexto y enunciado.
-- Cuatro distractores y respuesta correcta.
+- Cuatro distractores y una respuesta correcta.
 - Justificación de la respuesta.
 - Bibliografía.
 - Competencia, tema y subtema.
 - Nivel de dificultad.
 
-El sistema valida los campos obligatorios y la estructura de las preguntas antes de almacenarlas.
+El sistema valida los campos obligatorios y las opciones antes de guardar la pregunta en SQLite con un identificador único y estado inicial **BORRADOR**.
 
 ### HU-02. Envío de preguntas a revisión
 
-Permite al autor cambiar el estado de una pregunta de `BORRADOR` a `PENDIENTE_REVISION`.
-
-El cambio de estado está sujeto a las reglas de negocio y a la autorización del autor correspondiente.
+El autor puede cambiar una pregunta propia de `BORRADOR` a `PENDIENTE_REVISION`. La operación valida la propiedad de la pregunta y su estado actual; no permite realizar repetidamente una transición que ya fue efectuada.
 
 ### HU-03. Consulta de preguntas
 
-Permite consultar las preguntas registradas por el autor mediante:
+El autor puede:
 
-- Listado de preguntas.
-- Filtros por estado y dificultad.
-- Paginación de resultados.
-- Visualización de los detalles de cada pregunta.
-- Identificación visual de los estados.
+- Consultar únicamente sus preguntas.
+- Filtrar por estado y dificultad.
+- Navegar por páginas de **10 registros**.
+- Consultar el total de resultados y los detalles de cada pregunta.
+- Identificar visualmente el estado de las preguntas.
 
-### HU-04. Asignación de revisores
+### HU-04. Asignación de revisores y notificaciones
 
-Permite al administrador gestionar el proceso de asignación de docentes revisores.
+El perfil **Administrador** permite:
 
-Sus principales funciones son:
-
-- Registrar docentes revisores.
-- Consultar las preguntas pendientes de revisión.
+- Registrar docentes revisores con identificador, nombre y correo electrónico.
+- Rechazar registros de revisores duplicados.
+- Consultar preguntas pendientes de revisión.
 - Asignar uno o varios docentes a una pregunta.
-- Evitar asignaciones duplicadas.
-- Consultar los docentes asignados.
-- Enviar notificaciones por correo electrónico.
-- Registrar los resultados de los envíos.
-- Reintentar notificaciones que no pudieron enviarse.
+- Evitar que se repita la misma pareja pregunta–revisor.
+- Consultar las asignaciones existentes.
+- Enviar notificaciones mediante SMTP.
+- Registrar estados `PENDIENTE` y `ENVIADA`.
+- Reintentar notificaciones pendientes después de un fallo.
 
-La asignación se almacena en SQLite y se conserva incluso si ocurre un problema durante el envío del correo.
+**La asignación permanece almacenada en SQLite incluso si falla el envío del correo electrónico.**
 
 ---
 
 ## 3. Tecnologías utilizadas
 
-| Tecnología | Utilización |
+| Tecnología | Uso en el proyecto |
 |---|---|
-| **Java 21** | Lenguaje principal de desarrollo. |
-| **Java Swing** | Construcción de la interfaz gráfica. |
-| **Apache Maven** | Gestión de dependencias y compilación. |
-| **SQLite** | Almacenamiento persistente de información. |
-| **Jakarta Mail** | Implementación del envío de correos SMTP. |
-| **Eclipse Angus Mail** | Implementación del proveedor de correo. |
-| **JUnit 5** | Pruebas unitarias automatizadas. |
-| **Git y GitHub** | Control de versiones y colaboración. |
-| **Visual Studio Code** | Entorno de desarrollo compatible con el proyecto. |
+| **Java 21** | Lenguaje de programación. |
+| **Java Swing** | Interfaz gráfica de escritorio. |
+| **Apache Maven** | Compilación, dependencias y ejecución de pruebas. |
+| **SQLite / JDBC** | Persistencia local de datos. |
+| **Jakarta Mail y Eclipse Angus Mail** | Notificaciones por SMTP. |
+| **JUnit 5** | Pruebas automatizadas. |
+| **Git y GitHub** | Control de versiones y Pull Requests. |
+| **Jira** | Historias de usuario, subtareas y seguimiento de sprints. |
+| **Visual Studio Code** | Entorno de desarrollo compatible con Java y Maven. |
+
+---
 
 ## 4. Arquitectura del sistema
 
-El proyecto utiliza una **arquitectura monolítica de tres capas**, complementada con el patrón MVC.
+La aplicación utiliza una **arquitectura monolítica modular de tres capas** y organiza la interacción de las interfaces mediante **MVC (Modelo–Vista–Controlador)**.
 
-### Capa de presentación
+### 4.1. Capa de presentación
 
-Contiene las interfaces Java Swing y los controladores responsables de gestionar la interacción entre los usuarios y el sistema.
+Contiene las vistas **Java Swing** y sus controladores. Gestiona formularios, acciones de usuario, listados y mensajes, y delega la lógica de negocio a los servicios.
 
-### Capa de dominio
+Entre sus componentes se encuentran `RegistroPreguntaView`, `PreguntaEstadoView`, `ConsultaPreguntaView`, `AsignacionRevisionView` y `RegistroRevisorView`.
 
-Contiene las entidades, interfaces de servicios, validaciones, reglas de negocio y casos de uso.
+### 4.2. Capa de dominio
 
-### Capa de infraestructura
+Contiene las entidades, contratos, validadores y servicios responsables de ejecutar las reglas de negocio: registro, cambio de estado, consulta, autorización demostrativa, asignación de revisores y reintento de notificaciones.
 
-Contiene las implementaciones de los repositorios SQLite y los componentes responsables de las notificaciones por correo electrónico.
+### 4.3. Capa de infraestructura
 
-### Estructura principal
+Contiene los repositorios **SQLite**, la comunicación **JDBC** y los componentes de notificación por **SMTP/STARTTLS**.
+
+### 4.4. Estructura principal del código
 
 ```text
 src/
@@ -116,143 +119,111 @@ src/
 │   └── java/
 │       └── co/edu/unicauca/saberpro/
 │           ├── Main.java
-│           │
 │           ├── presentation/
 │           │   ├── view/
 │           │   └── controller/
-│           │
 │           ├── domain/
 │           │   ├── model/
 │           │   ├── service/
 │           │   ├── repository/
 │           │   └── validation/
-│           │
 │           └── infrastructure/
 │               ├── persistence/
 │               └── notification/
-│
 └── test/
     └── java/
 ```
 
-Esta separación favorece la mantenibilidad, la modificabilidad y las pruebas de los diferentes componentes.
+### 4.5. Principios y patrones de diseño
 
-Se utilizan interfaces para desacoplar los servicios de sus implementaciones. En HU-04, el componente `NotificadorRevisionConRegistro` aplica el patrón Decorator para registrar los resultados de las notificaciones sin modificar la responsabilidad principal del notificador SMTP.
+- **MVC:** separa la interacción visual, la coordinación de acciones y la lógica de negocio.
+- **Repository:** evita que los servicios dependan directamente de sentencias SQL.
+- **Decorator (GoF):** `NotificadorRevisionConRegistro` agrega el registro de resultados a las notificaciones sin modificar la responsabilidad del notificador SMTP.
+- **Inyección de dependencias:** los servicios reciben interfaces de repositorios y notificación, facilitando el reemplazo de implementaciones y las pruebas.
+- **SOLID:** promueve separación de responsabilidades y dependencias sobre contratos.
+
+Los diagramas **C4, UML, modelos de datos, decisiones arquitectónicas y escenarios de modificabilidad** se encuentran en el [documento de arquitectura](docs/Banco_Preguntas_Saber_Pro_Documento_Final.pdf).
 
 ---
 
 ## 5. Instalación y ejecución
 
-### Requisitos
-
-Para ejecutar el proyecto es necesario contar con:
+### 5.1. Requisitos
 
 - **JDK 21**.
 - **Apache Maven**.
 - **Git**.
-- **Visual Studio Code** con extensiones Java, o un IDE compatible con Maven.
-- Un entorno gráfico para visualizar las ventanas Java Swing.
+- **Visual Studio Code** u otro IDE compatible con Maven (opcional).
+- **Entorno gráfico** capaz de mostrar ventanas Swing.
 
-No es necesario instalar un servidor de base de datos, ya que SQLite utiliza un archivo local.
+No se necesita instalar un servidor de base de datos: **SQLite** utiliza un archivo local.
 
-### Paso 1. Clonar el repositorio
+### 5.2. Clonar el repositorio
 
 ```bash
 git clone https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026.git
-```
-
-Ingresar a la carpeta del proyecto:
-
-```bash
 cd banco-preguntas-saber-pro-2026
 ```
 
-### Paso 2. Abrir el proyecto
-
-Abrir la carpeta en Visual Studio Code y esperar a que Maven reconozca las dependencias definidas en `pom.xml`.
-
-### Paso 3. Verificar Java y Maven
+### 5.3. Verificar Java y Maven
 
 ```bash
 java -version
-```
-
-```bash
 mvn -version
 ```
 
-### Paso 4. Compilar el proyecto
+### 5.4. Compilar el proyecto
 
 ```bash
 mvn clean compile
 ```
 
-### Paso 5. Ejecutar las pruebas
+### 5.5. Ejecutar las pruebas automatizadas
 
 ```bash
 mvn clean test
 ```
 
-### Paso 6. Iniciar la aplicación
-
-Desde la carpeta principal del proyecto, ejecutar:
+### 5.6. Iniciar la aplicación
 
 ```bash
 mvn exec:java -Dexec.mainClass=co.edu.unicauca.saberpro.Main
 ```
 
-Se abrirá una ventana para seleccionar el perfil demostrativo:
+Al iniciar, selecciona uno de los perfiles:
 
-**Autor (HU-01 a HU-03):** permite registrar preguntas, enviarlas a revisión y consultar las preguntas propias.
+- **Autor (HU-01 a HU-03):** registra, envía a revisión y consulta preguntas propias.
+- **Administrador (HU-04):** registra y asigna docentes revisores, consulta asignaciones y gestiona notificaciones.
 
-**Administrador (HU-04):** permite registrar docentes revisores, asignarlos a preguntas y gestionar las notificaciones.
-
-**Nota:** la selección de perfiles es una implementación académica demostrativa. Actualmente no existe un sistema de inicio de sesión con autenticación real.
+**Nota:** los perfiles son demostrativos. No se ha implementado inicio de sesión con contraseñas ni autenticación de usuarios productivos.
 
 ---
 
-## 6. Base de datos
+## 6. Base de datos SQLite
 
-El sistema utiliza SQLite para almacenar la información de manera persistente.
-
-Al ejecutar la aplicación, se crea automáticamente la base de datos local:
+Al iniciar la aplicación, se crea automáticamente el archivo de base de datos local:
 
 ```text
 data/banco_preguntas.db
 ```
 
-En ella se almacena información relacionada con preguntas, docentes revisores, asignaciones y notificaciones.
+Se almacena información de preguntas, distractores, revisores, asignaciones y estados de notificación.
 
-La carpeta `data/` está excluida del control de versiones mediante `.gitignore`.
+La carpeta `data/` está excluida del control de versiones mediante `.gitignore`. Por tanto, **cada instalación tiene su propia base de datos**, y los registros de un computador no se transfieren automáticamente a otro.
 
-**Importante:** al descargar el proyecto desde GitHub, cada usuario comienza con su propia base de datos. Los registros creados en otro computador no se transfieren automáticamente.
-
-Para comprobar HU-04 desde una instalación nueva, primero deben registrarse preguntas, cambiarlas a estado pendiente de revisión y crear los docentes revisores.
+Para probar **HU-04** desde una instalación limpia, primero debes registrar una pregunta con el perfil Autor, enviarla a revisión y, después, registrar un docente desde el perfil Administrador.
 
 ---
 
 ## 7. Notificaciones por correo electrónico — HU-04
 
-El sistema implementa notificaciones mediante **SMTP con autenticación y cifrado STARTTLS**.
+La aplicación envía notificaciones mediante **SMTP**, con autenticación y cifrado **STARTTLS**. Al asignar un revisor, el sistema intenta enviar un correo a la dirección registrada para dicho docente.
 
-Cuando el administrador asigna un docente revisor a una pregunta pendiente, el sistema intenta enviar un correo electrónico a la dirección registrada para ese docente.
+El mensaje contiene el nombre del revisor y la información necesaria para identificar la pregunta asignada. El asunto utilizado es **«Nueva pregunta asignada para revisión»**.
 
-El mensaje incluye:
+### 7.1. Verificación funcional de correo
 
-- Nombre del docente revisor.
-- Identificador de la pregunta.
-- Enunciado de la pregunta.
-- Información sobre la asignación para revisión académica.
-
-El asunto utilizado es:
-
-**Nueva pregunta asignada para revisión**
-
-### 7.1. Estado actual del envío de correos
-
-El envío de correos electrónicos **está implementado y fue probado exitosamente**.
-
-Durante la verificación funcional se obtuvo:
+En una comprobación manual registrada durante el desarrollo se obtuvo:
 
 | Resultado | Cantidad |
 |---|---:|
@@ -260,38 +231,32 @@ Durante la verificación funcional se obtuvo:
 | Notificaciones enviadas | 1 |
 | Notificaciones fallidas | 0 |
 
-También se comprobó que el mensaje llegó correctamente a la bandeja de entrada del destinatario.
+Se comprobó adicionalmente la recepción del mensaje en la bandeja del destinatario de prueba. Este resultado corresponde a esa ejecución concreta; el envío en otros equipos depende de la configuración SMTP y del proveedor.
 
-Esta verificación demuestra el funcionamiento del envío SMTP con una configuración válida. No significa que las credenciales utilizadas estén incluidas en el proyecto.
+### 7.2. Variables de entorno SMTP
 
-### 7.2. Configuración SMTP
+**No se incluyen credenciales privadas ni contraseñas en GitHub.** Para enviar correos reales, cada evaluador debe configurar sus propias variables de entorno:
 
-Por razones de seguridad, **el repositorio no contiene contraseñas ni credenciales privadas de correo electrónico**.
-
-Cada persona que desee probar el envío deberá configurar sus propias credenciales SMTP mediante variables de entorno.
-
-| Variable | Descripción |
+| Variable | Propósito |
 |---|---|
-| `SMTP_HOST` | Dirección del servidor SMTP. |
-| `SMTP_PORT` | Puerto del servidor. |
-| `SMTP_USER` | Cuenta utilizada para autenticar el envío. |
+| `SMTP_HOST` | Dirección del servidor de correo. |
+| `SMTP_PORT` | Puerto de conexión SMTP. |
+| `SMTP_USER` | Usuario de autenticación. |
 | `SMTP_PASSWORD` | Contraseña SMTP o contraseña de aplicación. |
-| `SMTP_FROM` | Dirección del correo remitente. |
+| `SMTP_FROM` | Dirección del remitente. |
 
-Para Gmail se utiliza:
+Con Gmail, un ejemplo de servidor y puerto es:
 
 ```text
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 ```
 
-La cuenta remitente debe permitir el uso de SMTP y contar con una contraseña de aplicación válida.
+La cuenta remitente debe permitir el acceso SMTP y contar con una contraseña de aplicación válida, cuando corresponda. **No se debe publicar una contraseña real en el repositorio.**
 
-**No debe utilizarse la contraseña normal de Gmail como sustituto de una contraseña de aplicación.**
+### 7.3. Configuración en Windows (PowerShell)
 
-### 7.3. Configuración SMTP en Windows
-
-Desde una terminal **PowerShell** de Visual Studio Code:
+En una terminal de PowerShell:
 
 ```powershell
 $env:SMTP_HOST = "smtp.gmail.com"
@@ -301,21 +266,16 @@ $env:SMTP_USER = Read-Host "Correo Gmail remitente"
 $env:SMTP_FROM = $env:SMTP_USER
 
 $clave = Read-Host "Contraseña de aplicación" -AsSecureString
-
 $env:SMTP_PASSWORD = [System.Net.NetworkCredential]::new("", $clave).Password
 ```
 
-Después, desde esa misma terminal, iniciar el programa:
+Luego, **en esa misma terminal**, ejecuta:
 
 ```powershell
-mvn exec:java -Dexec.mainClass=co.edu.unicauca.saberpro.Main
+mvn exec:java "-Dexec.mainClass=co.edu.unicauca.saberpro.Main"
 ```
 
-Las variables configuradas se mantienen en esa sesión de terminal y no se guardan en GitHub.
-
-### 7.4. Configuración SMTP en Linux o Google Cloud Shell
-
-Ejecutar:
+### 7.4. Configuración en Linux o Google Cloud Shell
 
 ```bash
 export SMTP_HOST="smtp.gmail.com"
@@ -323,154 +283,142 @@ export SMTP_PORT="587"
 
 read -rp "Correo Gmail remitente: " SMTP_USER
 export SMTP_USER
-
 export SMTP_FROM="$SMTP_USER"
 
 read -rsp "Contraseña de aplicación: " SMTP_PASSWORD
 echo
-
 SMTP_PASSWORD="${SMTP_PASSWORD//[[:space:]]/}"
 export SMTP_PASSWORD
 ```
 
-La contraseña se introduce de manera oculta.
-
-Después ejecutar el programa desde la misma terminal:
+Luego, en esa misma terminal:
 
 ```bash
 mvn exec:java -Dexec.mainClass=co.edu.unicauca.saberpro.Main
 ```
 
-**Nota sobre Google Cloud Shell:** para mostrar las ventanas Swing se necesita un escritorio gráfico. Durante las pruebas se utilizó un entorno virtual con Xvfb y noVNC. En un computador con escritorio gráfico, como Windows, esto no es necesario.
+**Google Cloud Shell:** una terminal por sí sola no muestra interfaces gráficas Java Swing. Para la demostración se necesita un entorno gráfico, por ejemplo uno configurado mediante Xvfb y noVNC. En Windows con escritorio, esto no es necesario.
 
-### 7.5. ¿Qué ocurre si el correo no se envía?
-
-El sistema contempla fallos de autenticación, problemas de conexión o ausencia de configuración SMTP.
-
-En estos casos:
+### 7.5. ¿Qué sucede si falla el correo?
 
 1. La asignación del docente permanece guardada en SQLite.
 2. La notificación conserva el estado `PENDIENTE`.
 3. El administrador puede corregir la configuración SMTP.
-4. Posteriormente puede seleccionar **Reintentar notificaciones**.
-5. Si el envío se completa y se registra correctamente, la notificación cambia al estado `ENVIADA`.
+4. Después puede utilizar la opción **Reintentar notificaciones**.
+5. Si el proveedor acepta el envío y se guarda correctamente el resultado, el estado cambia a `ENVIADA`.
 
-El sistema también evita crear una segunda asignación cuando el mismo docente ya se encuentra asignado a esa pregunta.
+El sistema también impide duplicar la asignación de un mismo revisor a una misma pregunta.
 
-Que el servidor SMTP acepte un mensaje no garantiza su recepción en la bandeja principal. Si es necesario, debe comprobarse también la carpeta de correo no deseado.
+**Importante:** la aceptación del mensaje por el servidor SMTP no garantiza su entrega en la bandeja principal del destinatario; también puede ser necesario revisar la carpeta de correo no deseado.
 
-### 7.6. Seguridad
+### 7.6. Seguridad de credenciales
 
-Las credenciales SMTP se gestionan mediante variables de entorno y no se almacenan dentro del código Java.
-
-Por seguridad:
-
-- No deben publicarse contraseñas en GitHub.
-- No deben compartirse contraseñas de aplicación entre integrantes o evaluadores.
-- No deben introducirse credenciales directamente en `Main.java` o `pom.xml`.
-- Cada persona debe utilizar una cuenta o proveedor SMTP autorizado.
-
-Los archivos `.env` están excluidos mediante `.gitignore`, pero la aplicación actual **no carga automáticamente un archivo `.env`**: lee las variables del entorno de ejecución.
+- No almacenar contraseñas dentro de `Main.java`, `pom.xml` ni otros archivos versionados.
+- No subir capturas que muestren secretos ni compartir contraseñas de aplicación.
+- Configurar SMTP por variables de entorno propias.
+- Los archivos `.env` se excluyen mediante `.gitignore`, pero la aplicación **no los lee automáticamente**: utiliza `System.getenv`.
 
 ---
 
-## 8. Pruebas unitarias
+## 8. Pruebas automatizadas
 
-Se implementaron pruebas automatizadas utilizando **JUnit 5**.
+Las pruebas se desarrollaron con **JUnit 5** y abarcan:
 
-Estas pruebas verifican el comportamiento de los componentes principales, incluyendo:
-
-- Entidades y validaciones.
+- Entidades y validaciones de campos.
 - Registro y consulta de preguntas.
-- Cambios de estado.
-- Servicios y reglas de negocio.
-- Autorización según el rol demostrativo.
+- Cambios de estado y reglas de autorización.
+- Filtros, paginación y controladores.
 - Persistencia con SQLite.
-- Asignación de revisores.
-- Prevención de duplicados.
-- Controladores.
-- Registro y reintento de notificaciones.
+- Registro y asignación de revisores.
+- Restricciones de duplicidad.
+- Notificaciones, fallos y reintentos.
 
-Para ejecutar las pruebas:
+Para ejecutarlas desde la raíz del proyecto:
 
 ```bash
 mvn clean test
 ```
 
-### Último resultado verificado
+### Resultado documentado de una ejecución exitosa
 
-| Indicador | Resultado |
+| Indicador | Resultado registrado |
 |---|---:|
 | Pruebas ejecutadas | **180** |
 | Fallos | **0** |
 | Errores | **0** |
 | Pruebas omitidas | **0** |
-| Compilación | **BUILD SUCCESS** |
+| Resultado Maven | **BUILD SUCCESS** |
 
-Las pruebas unitarias pueden ejecutarse sin utilizar credenciales personales de Gmail.
+Estos datos corresponden a una ejecución exitosa documentada durante el desarrollo; para verificar el estado de la versión descargada es necesario volver a ejecutar `mvn clean test`.
 
-El envío real de correo se comprobó adicionalmente mediante una prueba funcional manual.
-
----
-
-## 9. Estado actual y aspectos pendientes
-
-### Funcionalidades completadas
-
-Se encuentran implementadas e integradas en la rama principal `main`:
-
-- HU-01: registro y validación de preguntas.
-- HU-02: transición de preguntas a pendiente de revisión.
-- HU-03: consulta con filtros y paginación.
-- HU-04: registro y asignación de revisores.
-- Persistencia local mediante SQLite.
-- Notificaciones SMTP y reintentos.
-- Pruebas automatizadas con JUnit 5.
-
-### Aspectos pendientes de la entrega académica
-
-Aunque las cuatro historias de usuario están implementadas, deben verificarse los siguientes entregables y actividades:
-
-- **Documentación de arquitectura:** incorporar o enlazar el documento con los diagramas y decisiones técnicas exigidos por la guía del curso.
-- **Sustentación:** preparar el video con la participación de los integrantes del equipo.
-- **Verificación de instalación:** comprobar que el proyecto se ejecuta correctamente desde una copia limpia del repositorio en otro computador.
-- **Configuración de correo en otros equipos:** cada evaluador o integrante que desee enviar notificaciones reales deberá configurar sus propias credenciales SMTP.
-
-### Limitaciones conocidas
-
-**Perfiles demostrativos:** actualmente se permite seleccionar el perfil Autor o Administrador para realizar las pruebas académicas. No se ha implementado autenticación real de usuarios.
-
-**Base de datos local:** SQLite almacena los datos en cada equipo. La aplicación no dispone de una base de datos compartida entre diferentes computadores.
-
-**Notificaciones externas:** el envío de correos depende de que exista una configuración SMTP válida y de que el proveedor de correo permita la conexión.
-
-Estas limitaciones no impiden utilizar las funcionalidades implementadas, pero deben considerarse al evaluar el alcance del sistema.
+Las pruebas automatizadas no requieren credenciales personales de Gmail. El envío real de correo se verificó por separado mediante una prueba manual.
 
 ---
 
-## 10. Control de versiones y colaboración
+## 9. Estado de la entrega y limitaciones
 
-El proyecto se administra mediante Git y GitHub.
+### 9.1. Trabajo implementado
 
-La rama `main` contiene los avances integrados y verificados.
+Las cuatro historias de usuario HU-01 a HU-04 están integradas en `main`, junto con las interfaces Swing, la persistencia SQLite, la notificación SMTP y los tests automatizados.
 
-El desarrollo de las historias de usuario se realizó mediante ramas de trabajo:
+### 9.2. Documentación disponible
+
+El **documento de arquitectura en PDF** y el **backlog de Jira en Excel** ya fueron incorporados a la carpeta [`docs/`](docs/) mediante el **[Pull Request #8](https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026/pull/8)**.
+
+El documento presenta requisitos, criterios de aceptación, diagramas C4 y UML, patrones de diseño, escenarios de calidad, pruebas y evidencias de gestión del proyecto.
+
+### 9.3. Aspectos que deben verificarse para la entrega académica
+
+- **Usabilidad:** se documentó una autoevaluación; la prueba independiente con usuarios externos debe distinguirse de los ejercicios simulados o propuestos.
+- **Video de sustentación:** se proporciona una carpeta de Google Drive en la sección 11; debe comprobarse que incluya el video y permita acceso. La guía académica solicita publicación en YouTube.
+- **Instalación limpia:** es recomendable comprobar compilación y apertura de la interfaz en otro computador con Java 21, Maven y entorno gráfico.
+- **Correo en otros equipos:** el envío SMTP requiere variables de entorno y credenciales propias del evaluador.
+
+### 9.4. Limitaciones conocidas
+
+- **Perfiles demostrativos:** se puede elegir Autor o Administrador, pero no existe autenticación productiva.
+- **Base de datos local:** no hay sincronización multiusuario entre computadores.
+- **Dependencia externa SMTP:** el correo depende de la conexión, la configuración y las políticas del proveedor.
+
+Estas limitaciones describen el alcance de la primera entrega y no se presentan como funcionalidades implementadas.
+
+---
+
+## 10. Control de versiones y gestión ágil
+
+El código se administra con **Git y GitHub**. La rama `main` contiene los cambios integrados mediante Pull Requests.
 
 | Rama | Propósito |
 |---|---|
 | `main` | Versión principal del proyecto. |
-| `feature/hu-01` | Registro de preguntas. |
-| `feature/hu-02` | Envío de preguntas a revisión. |
-| `feature/hu-03` | Consulta de preguntas. |
-| `feature/hu-04` | Asignación de revisores y notificaciones. |
+| `feature/hu-01` | Desarrollo de HU-01. |
+| `feature/hu-02` | Desarrollo de HU-02. |
+| `feature/hu-03` | Desarrollo de HU-03. |
+| `feature/hu-04` | Desarrollo de HU-04. |
+| `docs/entregables-primer-corte` | Incorporación del PDF y del Excel a `docs/`, integrada a `main` mediante PR #8. |
 
-Los cambios se integran mediante **Pull Requests**, manteniendo organizado el historial del repositorio y evitando modificaciones directas sobre la rama principal protegida.
+El seguimiento se realizó en **Jira (proyecto PSP2)** mediante cuatro sprints correspondientes a las cuatro historias de usuario. Los sprints se cerraron y las subtareas de seguimiento se registraron posteriormente; por tanto, la vista actual de Jira no debe confundirse con una captura de la planificación histórica original.
 
-### Repositorio oficial
+El desarrollo y la documentación corresponden a una única desarrolladora: **Britney Benítez Ordoñez**.
 
-https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026
+**Repositorio:** https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026
+
+---
+
+## 11. Documentación y enlaces de la entrega
+
+| Recurso | Enlace |
+|---|---|
+| **Tablero y sprints en Jira** | [Abrir proyecto PSP2](https://banco-preguntas-unicauca.atlassian.net/jira/software/projects/PSP2) |
+| **Documento de arquitectura y requisitos (PDF)** | [Ver documento](docs/Banco_Preguntas_Saber_Pro_Documento_Final.pdf) |
+| **Backlog y seguimiento de sprints (Excel)** | [Descargar Excel](docs/Backlog_Jira_PSP2_Saber_Pro_2026.xlsx) |
+| **Sustentación (carpeta de Google Drive)** | [Abrir carpeta de Drive](https://drive.google.com/drive/folders/1_5HzJgT9fSfKCVkjcS_2WyRDT6QKCIa8?usp=sharing) |
+| **Pull Request de documentación** | [Consultar PR #8](https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026/pull/8) |
+| **Código fuente** | [Repositorio GitHub](https://github.com/britneybenitez-gif/banco-preguntas-saber-pro-2026) |
+
+**Nota sobre el video:** el enlace de Google Drive lleva a una carpeta, no directamente a un video. Antes de la entrega, verificar sus permisos y, si corresponde, agregar también el enlace del video publicado en YouTube.
 
 ---
 
 **Proyecto académico — Universidad del Cauca**  
-Ingeniería de Software II · Periodo 2026.2
+**Ingeniería de Software II · Periodo 2026.2**
